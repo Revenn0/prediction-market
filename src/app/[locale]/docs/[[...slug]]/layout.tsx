@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import type { SupportedLocale } from '@/i18n/locales'
 import { DocsLayout } from 'fumadocs-ui/layouts/docs'
@@ -11,6 +12,18 @@ import { loadRuntimeThemeState } from '@/lib/theme-settings'
 interface DocsSlugLayoutProps {
   params: Promise<{ locale: string, slug?: string[] }>
   children: ReactNode
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const runtimeTheme = await loadRuntimeThemeState()
+  const site = runtimeTheme.site
+
+  return {
+    title: {
+      template: `%s | ${site.name} Documentation`,
+      default: `${site.name} Documentation`,
+    },
+  }
 }
 
 export default async function Layout({ params, children }: DocsSlugLayoutProps) {
@@ -27,6 +40,7 @@ export default async function Layout({ params, children }: DocsSlugLayoutProps) 
   return (
     <DocsLayout
       nav={{
+        url: '/docs',
         title: (
           <>
             <SiteLogoIcon
@@ -47,22 +61,22 @@ export default async function Layout({ params, children }: DocsSlugLayoutProps) 
       sidebar={{
         tabs: [
           {
-            title: 'User Guide',
-            description: 'How to use the platform',
+            title: 'Documentation',
+            description: 'For Users',
             url: docsPath('/docs/users'),
             icon: <BookOpenIcon className="size-4" />,
           },
           {
             title: 'API Reference',
-            description: 'REST and WebSocket contracts',
+            description: 'For Developers',
             url: docsPath('/docs/api-reference'),
             icon: <CodeIcon className="size-4" />,
           },
-          ...(JSON.parse(process.env.FORK_OWNER_GUIDE || 'false')
+          ...(process.env.FORK_OWNER_GUIDE === 'true'
             ? [
                 {
-                  title: 'Fork Owner Guide',
-                  description: 'Create your own platform',
+                  title: 'Owner Guide',
+                  description: 'For Entrepeneurs',
                   url: docsPath('/docs/owners'),
                   icon: <GitForkIcon className="size-4" />,
                 },
@@ -78,7 +92,7 @@ export default async function Layout({ params, children }: DocsSlugLayoutProps) 
         {
           type: 'main',
           url: '/',
-          text: site.name,
+          text: 'Main site',
           icon: <HomeIcon />,
         },
         ...(site.discordLink
@@ -86,7 +100,7 @@ export default async function Layout({ params, children }: DocsSlugLayoutProps) 
               {
                 type: 'main' as const,
                 url: site.discordLink,
-                text: 'Discord Community',
+                text: 'Get Help',
                 icon: (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

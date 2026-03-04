@@ -1,45 +1,29 @@
 ---
 title: Affiliate Program
-description: Earn a share of trading fees when people trade through your link
-icon: Link
+description: Share your referral link and earn commission from referred trading activity.
 ---
 
 
+## Where to manage it
 
-{process.env.NEXT_PUBLIC_DISCORD_LINK && (
-<Callout>
-  Need Help? Reach out on <a href={process.env.NEXT_PUBLIC_DISCORD_LINK} rel="noopener noreferrer" target="_blank">Discord</a> and the team will walk you through the affiliate tools.
+Open <strong>/settings/affiliate</strong> to view:
+
+- your referral link
+- commission rate
+- referrals and active traders
+- referred volume and earned fees
+
+## How commission is calculated
+
+- Current trading fee: <strong><TradingFeeDisplay /></strong>
+- Your affiliate share of that fee: <strong><AffiliateShareDisplay /></strong>
+
+<Callout type="info" title="Execution basis">
+  Commission is taken from the trading fee at order execution time, not directly from raw volume.
 </Callout>
-)}
 
-## Share your referral link
+<FeeCalculationExample amount={1000} />
 
-Every account receives a personal referral link inside **My Account → Affiliate**.
-When someone signs up or connects a wallet using your link, they become your referral.
+## Payout timing
 
-Your dashboard shows:
-
-- **Referrals** – total number of invited accounts
-- **Active traders** – referrals who placed trades
-- **Referred volume** – USDC traded by your referrals
-- **Earned fees** – commissions you have already received
-
-## Commission structure
-
-The affiliate program pays you a portion of the trading fee your referrals generate:
-
-- Current platform trading fee: **<TradingFeeDisplay />** per fill
-- Your commission: **<AffiliateShareDisplay /> of that trading fee** on every qualifying trade (the current live setting)
-
-<FeeCalculationExample amount={1000} format="inline" />
-
-## When you get paid
-
-- Commissions accrue instantly as each referral trade settles
-- You can track earnings in the Affiliate dashboard and withdraw them just like normal trading profits
-- If a referral reverses a trade (cancellation/refund), the commission adjusts automatically
-
-## Program updates
-
-Admins can occasionally adjust the trading fee or the affiliate share for promotions.
-Whenever a change happens, the dashboard shows the updated percentages so you always know what you’ll earn before sharing your link.
+Affiliate earnings update as referred trades settle and can be tracked directly in the affiliate dashboard.

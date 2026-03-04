@@ -4,8 +4,10 @@
   "icon": "SquareTerminal",
   "root": true,
   "pages": [
-    "introduction",
+    "index",
+    "rate-limits",
     "authentication",
+    "clients-sdks",
     "---Trade---",
     "...trade",
     "---Market Data---",
@@ -26,7 +28,7 @@
     "...misc",
     "---Series---",
     "...series",
-    "---Wss---",
+    "---WebSocket---",
     "...wss"
   ]
 }

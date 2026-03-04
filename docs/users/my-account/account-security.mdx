@@ -1,26 +1,22 @@
 ---
 title: Account Security
-description: Best practices to keep your account safe
-icon: Lock
+description: Practical steps to keep your account and wallet safe.
 ---
 
-{process.env.NEXT_PUBLIC_DISCORD_LINK && (
-<Callout>
-  Need Help? For assistance, reach out to us on <a href={process.env.NEXT_PUBLIC_DISCORD_LINK} rel="noopener noreferrer" target="_blank">Discord</a>.
-</Callout>
-)}
 
-## Login methods
+## Security checklist
 
-You can sign in using **social accounts** or a **crypto wallet** (via Reown).
-- Social logins: enable **Two-Factor Auth** for extra protection
-- Wallet logins: your wallet’s **private key** controls access
+- Enable <strong>Two-Factor Auth</strong> in <strong>/settings/two-factor</strong>.
+- Verify the site URL before signing messages.
+- Never share seed phrase, private key, or backup codes.
+- Revoke unused wallet connections periodically.
 
----
+## Signature safety
 
-## Best practices
+Before approving any signature or transaction:
 
-- Verify the website URL before logging in
-- Never share recovery phrases or private keys
-- Use hardware wallets for larger balances
-- Review and revoke unused app permissions periodically
+- verify network/account
+- review destination/action
+- confirm amount/token details
+
+If anything looks unexpected, reject and contact support.

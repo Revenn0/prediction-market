@@ -1,7 +1,7 @@
 'use cache'
 
 import type { MDXComponents } from 'mdx/types'
-import type { Metadata, Route } from 'next'
+import type { Metadata } from 'next'
 import type { SupportedLocale } from '@/i18n/locales'
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from 'fumadocs-ui/layouts/docs/page'
 import defaultMdxComponents from 'fumadocs-ui/mdx'
@@ -13,19 +13,24 @@ import { PlatformShareDisplay } from '@/app/[locale]/docs/_components/PlatformSh
 import { TradingFeeDisplay } from '@/app/[locale]/docs/_components/TradingFeeDisplay'
 import { WebSocketPlayground } from '@/app/[locale]/docs/_components/WebSocketPlayground'
 import { APIPage } from '@/components/docs/APIPage'
+import { DiscordLink } from '@/components/docs/DiscordLink'
 import { ViewOptions } from '@/components/docs/LLMPageActions'
+import { SiteName } from '@/components/docs/SiteName'
 import { withLocalePrefix } from '@/lib/locale-path'
 import { source } from '@/lib/source'
+import { loadRuntimeThemeState } from '@/lib/theme-settings'
 
 function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
     ...defaultMdxComponents,
+    APIPage,
     TradingFeeDisplay,
     AffiliateShareDisplay,
     PlatformShareDisplay,
     FeeCalculationExample,
     WebSocketPlayground,
-    APIPage,
+    DiscordLink,
+    SiteName,
     ...components,
   }
 }
@@ -35,13 +40,9 @@ export default async function Page(props: PageProps<'/[locale]/docs/[[...slug]]'
   setRequestLocale(params.locale)
   const isApiReferencePage = params.slug?.[0] === 'api-reference'
 
-  const isOwnerGuideEnabled = JSON.parse(process.env.FORK_OWNER_GUIDE || 'false')
+  const isOwnerGuideEnabled = process.env.FORK_OWNER_GUIDE === 'true'
   if (params.slug?.[0] === 'owners' && !isOwnerGuideEnabled) {
     redirect('/docs/users')
-  }
-  if (isApiReferencePage && params.slug?.length === 1) {
-    const introductionRoute = `/${params.locale}/docs/api-reference/introduction` as Route
-    redirect(introductionRoute)
   }
 
   const page = source.getPage(params.slug)
@@ -63,8 +64,11 @@ export default async function Page(props: PageProps<'/[locale]/docs/[[...slug]]'
     >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
-      <div className="flex flex-wrap items-center gap-2 border-b pb-4">
+      <div className="-mt-4 flex flex-wrap items-center gap-2 border-b pb-4">
         <ViewOptions markdownUrl={markdownUrl} />
+        <DiscordLink className="h-8.5">
+          Get Help
+        </DiscordLink>
       </div>
       <DocsBody className={isApiReferencePage ? 'max-w-none' : undefined}>
         <MDX components={getMDXComponents()} />
@@ -80,26 +84,24 @@ export async function generateStaticParams() {
 export async function generateMetadata(props: PageProps<'/[locale]/docs/[[...slug]]'>): Promise<Metadata> {
   const params = await props.params
   setRequestLocale(params.locale)
+  const runtimeTheme = await loadRuntimeThemeState()
+  const siteDocumentationTitle = `${runtimeTheme.site.name} Documentation`
 
   const isOwnerGuideEnabled = JSON.parse(process.env.FORK_OWNER_GUIDE || 'false')
   if (params.slug?.[0] === 'owners' && !isOwnerGuideEnabled) {
     notFound()
-  }
-  if (params.slug?.[0] === 'api-reference' && params.slug.length === 1) {
-    const introductionPage = source.getPage(['api-reference', 'introduction'])
-    return {
-      title: introductionPage?.data.title ?? 'API Reference',
-      description: introductionPage?.data.description ?? 'API reference',
-    }
   }
 
   const page = source.getPage(params.slug)
   if (!page) {
     notFound()
   }
+  const pageTitle = page.data.title ?? 'Documentation'
 
   return {
-    title: page.data.title,
+    title: {
+      absolute: `${pageTitle} | ${siteDocumentationTitle}`,
+    },
     description: page.data.description,
   }
 }
