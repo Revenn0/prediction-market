@@ -116,17 +116,20 @@ interface ProcessMarketResult {
   eventIdForCacheInvalidation: string | null
   changed: boolean
   listAffectingChange: boolean
+  urlSetChanged: boolean
 }
 
 interface ProcessEventResult {
   eventId: string
   eventChanged: boolean
   listAffectingChange: boolean
+  urlSetChanged: boolean
 }
 
 interface ProcessMarketDataResult {
   eventIdForStatusUpdate: string
   marketChanged: boolean
+  urlSetChanged: boolean
 }
 
 const PNL_CONDITIONS_PAGE_QUERY = `
@@ -309,6 +312,7 @@ async function syncMarkets(allowedCreators: Set<string>, options: SyncOptions): 
   const eventIdsNeedingStatusUpdate = new Set<string>()
   const eventIdsNeedingCacheInvalidation = new Set<string>()
   let shouldInvalidateListCache = false
+  let shouldInvalidateSitemap = false
   const runtimeState: SyncRuntimeState = {
     eventTagSlugsByEventId: new Map(),
   }
@@ -369,6 +373,9 @@ async function syncMarkets(allowedCreators: Set<string>, options: SyncOptions): 
         if (processResult.listAffectingChange) {
           shouldInvalidateListCache = true
         }
+        if (processResult.urlSetChanged) {
+          shouldInvalidateSitemap = true
+        }
         processedCount++
         lastPersistableCursor = conditionCursor
         console.log(`✅ Processed market: ${condition.id}`)
@@ -411,6 +418,7 @@ async function syncMarkets(allowedCreators: Set<string>, options: SyncOptions): 
       }
       if (changedEventIds.length > 0) {
         shouldInvalidateListCache = true
+        shouldInvalidateSitemap = true
       }
       eventIdsNeedingStatusUpdate.clear()
     }
@@ -433,13 +441,15 @@ async function syncMarkets(allowedCreators: Set<string>, options: SyncOptions): 
     }
     if (changedEventIds.length > 0) {
       shouldInvalidateListCache = true
+      shouldInvalidateSitemap = true
     }
     eventIdsNeedingStatusUpdate.clear()
   }
 
-  if (eventIdsNeedingCacheInvalidation.size > 0 || shouldInvalidateListCache) {
+  if (eventIdsNeedingCacheInvalidation.size > 0 || shouldInvalidateListCache || shouldInvalidateSitemap) {
     const invalidationSummary = await invalidateEventCaches(Array.from(eventIdsNeedingCacheInvalidation), {
       includeList: shouldInvalidateListCache,
+      includeSitemap: shouldInvalidateSitemap,
     })
     console.log('🧹 Event cache invalidation summary:', invalidationSummary)
   }
@@ -584,6 +594,7 @@ async function processMarket(
     eventIdForCacheInvalidation: changed ? eventResult.eventId : null,
     changed,
     listAffectingChange: eventResult.listAffectingChange,
+    urlSetChanged: eventResult.urlSetChanged || marketResult.urlSetChanged,
   }
 }
 
@@ -923,6 +934,7 @@ async function processEvent(
       eventId: existingEvent.id,
       eventChanged,
       listAffectingChange,
+      urlSetChanged: false,
     }
   }
 
@@ -1006,6 +1018,7 @@ async function processEvent(
     eventId: newEvent.id,
     eventChanged: true,
     listAffectingChange: true,
+    urlSetChanged: true,
   }
 }
 
@@ -1025,6 +1038,7 @@ async function processMarketData(
       event_id: marketsTable.event_id,
       is_resolved: marketsTable.is_resolved,
       updated_at: marketsTable.updated_at,
+      slug: marketsTable.slug,
     })
     .from(marketsTable)
     .where(eq(marketsTable.condition_id, market.id))
@@ -1051,6 +1065,7 @@ async function processMarketData(
     return {
       eventIdForStatusUpdate,
       marketChanged: false,
+      urlSetChanged: false,
     }
   }
 
@@ -1192,9 +1207,15 @@ async function processMarketData(
     await processOutcomes(market.id, metadata.outcomes)
   }
 
+  const incomingSlug = String(metadata.slug ?? '').trim()
+  const previousSlug = (existingMarket?.slug ?? '').trim()
+  const urlSetChanged = (!marketAlreadyExists && incomingSlug.length > 0)
+    || (marketAlreadyExists && incomingSlug !== previousSlug)
+
   return {
     eventIdForStatusUpdate,
     marketChanged: true,
+    urlSetChanged,
   }
 }
 
@@ -1301,17 +1322,22 @@ async function updateEventStatusesFromMarketsBatch(eventIds: string[]) {
 
 async function invalidateEventCaches(
   eventIds: string[],
-  options: { includeList?: boolean } = {},
+  options: { includeList?: boolean, includeSitemap?: boolean } = {},
 ) {
   const uniqueEventIds = Array.from(new Set(eventIds.filter(Boolean)))
   const listTagInvalidated = options.includeList === true
+  const sitemapTagInvalidated = options.includeSitemap === true
   if (listTagInvalidated) {
     revalidateTag(cacheTags.eventsList, 'max')
+  }
+  if (sitemapTagInvalidated) {
+    revalidateTag(cacheTags.sitemap, 'max')
   }
 
   if (uniqueEventIds.length === 0) {
     return {
       listTagInvalidated,
+      sitemapTagInvalidated,
       eventTagInvalidations: 0,
       uniqueEventIdsCount: 0,
     }
@@ -1334,6 +1360,7 @@ async function invalidateEventCaches(
 
   return {
     listTagInvalidated,
+    sitemapTagInvalidated,
     eventTagInvalidations,
     uniqueEventIdsCount: uniqueEventIds.length,
   }
